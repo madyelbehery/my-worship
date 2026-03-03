@@ -10,35 +10,55 @@
 <meta name="theme-color" content="#000000">
 
 <style>
-  /* التنسيقات القديمة كما هي مع إضافة تنسيق أزرار الداتا */
   body { margin: 0; font-family: 'Segoe UI', sans-serif; background: #000; color: #fff; direction: rtl; user-select: none; -webkit-tap-highlight-color: transparent; }
+  
+  /* شاشة الدخول */
   #lockScreen { position: fixed; inset: 0; background: #000; z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; }
   .login-box { display: flex; flex-direction: column; gap: 12px; width: 250px; }
   #lockScreen input { padding: 15px; border-radius: 12px; border: 1px solid #333; background: #111; color: #fff; text-align: center; outline: none; }
   #lockScreen button { padding: 12px; border-radius: 10px; border: none; background: #4caf50; font-weight: bold; cursor: pointer; }
+  
   .header { text-align: center; padding: 20px; font-size: 24px; font-weight: bold; color: #4caf50; }
   .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; padding: 10px; max-width: 450px; margin: 0 auto; }
-  .day { width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.3s; border: 1px solid #222; }
-  .habit-glow { animation: pulseRed 2s infinite ease-in-out; border: 1px solid rgba(229, 57, 53, 0.8); }
-  @keyframes pulseRed { 0%, 100% { box-shadow: 0 0 5px rgba(229, 57, 53, 0.6); } 50% { box-shadow: 0 0 15px rgba(229, 57, 53, 0.9); } }
+  
+  .day { 
+    width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+    cursor: pointer; font-size: 16px; font-weight: bold; transition: 0.3s; border: 2px solid #222; 
+    color: #fff; 
+  }
+
+  /* الإطار الأزرق للقرآن فقط */
+  .quran-border { border-color: #2196f3 !important; box-shadow: 0 0 8px #2196f3; }
+  
+  /* لون الرقم أحمر عند فعل العادة */
+  .habit-active { color: #ff5252 !important; text-shadow: 0 0 5px rgba(255, 82, 82, 0.5); }
+
   .day.today { outline: 2px solid #fff; outline-offset: 3px; }
+  
   .stats-container { max-width: 90%; margin: 10px auto; padding: 15px; background: #111; border-radius: 15px; border: 1px solid #222; }
   .stat-label { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 13px; font-weight: bold; }
   .progress-bg { background: #222; height: 10px; border-radius: 10px; overflow: hidden; margin-bottom: 10px; }
   .progress-fill { height: 100%; transition: width 0.6s ease; }
   
-  /* ستايل أزرار النسخ الاحتياطي */
   .data-management { text-align: center; margin-top: 20px; padding-bottom: 30px; }
   .btn-data { background: #222; color: #888; border: 1px solid #333; padding: 8px 15px; border-radius: 8px; font-size: 11px; cursor: pointer; margin: 5px; }
   
+  /* Popup */
   .popup { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: none; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(8px); }
   .popup-content { background: #1a1a1a; padding: 20px; border-radius: 20px; width: 85%; max-width: 300px; text-align: center; display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; border: 1px solid #333; animation: fadeIn 0.4s; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+  
   .popup-circle { width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px; background: #2a2a2a; transition: 0.2s; }
   .popup-circle:active { transform: scale(0.85); }
   .active-prayer { background: #4caf50; color: #000; font-weight: bold; }
   .active-habit { background: #e53935; color: #fff; font-weight: bold; }
-  .btn-close { background: #444; color: #fff; width: 100%; padding: 12px; border: none; border-radius: 12px; margin-top: 10px; font-weight: bold; }
+
+  /* قسم القرآن */
+  .quran-section { width: 100%; background: #222; padding: 10px; border-radius: 12px; margin-top: 5px; border: 1px solid #2196f3; }
+  .quran-section input { width: 28%; padding: 8px; background: #000; border: 1px solid #333; color: #fff; border-radius: 5px; text-align: center; font-size: 12px; margin-top: 5px; }
+  .quran-section h4 { margin: 0 0 5px 0; font-size: 14px; color: #2196f3; }
+
+  .btn-save { background: #4caf50; color: #000; width: 100%; padding: 12px; border: none; border-radius: 12px; margin-top: 10px; font-weight: bold; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -71,15 +91,26 @@
   </div>
 
   <div class="popup" id="popup">
-    <div class="popup-content" id="popupContent">
+    <div class="popup-content">
       <div id="popupDate" style="width:100%; color:#4caf50; font-weight:bold;"></div>
-      <button class="btn-close" onclick="closePopup()">إغلاق</button>
+      
+      <div id="circlesArea" style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center;"></div>
+
+      <div class="quran-section">
+        <h4>📖 ورد القرآن الكريم</h4>
+        <input type="text" id="quranSurah" placeholder="السورة">
+        <input type="number" id="quranFrom" placeholder="من">
+        <input type="number" id="quranTo" placeholder="إلى">
+      </div>
+
+      <button class="btn-save" onclick="saveAndClose()">حفظ وإغلاق</button>
     </div>
   </div>
 </div>
 
 <script>
 const CORRECT_USER = "mohamed", CORRECT_PASS = "****";
+let currentOpenDate = "";
 
 function checkLogin() {
   if(document.getElementById("userInput").value === CORRECT_USER && document.getElementById("passInput").value === CORRECT_PASS) {
@@ -89,7 +120,6 @@ function checkLogin() {
   } else { document.getElementById("loginError").style.display="block"; }
 }
 
-// دعم زر Enter
 document.addEventListener('keypress', (e) => { if(e.key === 'Enter') checkLogin(); });
 
 const now = new Date(), year = now.getFullYear(), month = now.getMonth(), todayDate = now.getDate(), currentHour = now.getHours();
@@ -99,7 +129,75 @@ const prayerSchedule = [
 
 function getData(dateStr) {
   const saved = localStorage.getItem(dateStr);
-  return saved ? JSON.parse(saved) : { prayer: {}, habit: false };
+  return saved ? JSON.parse(saved) : { prayer: {}, habit: false, quran: {s:"", f:"", t:""} };
+}
+
+function loadCalendar() {
+  const cal = document.getElementById("calendar"), days = new Date(year, month + 1, 0).getDate();
+  document.getElementById("monthTitle").innerText = now.toLocaleString("ar", { month: "long", year: "numeric" });
+  cal.innerHTML = "";
+  for (let d = 1; d <= days; d++) {
+    const dStr = `d-${year}-${month+1}-${d}`, data = getData(dStr), div = document.createElement("div");
+    div.className = "day"; div.innerText = d;
+    if (d === todayDate) div.classList.add("today");
+    
+    let cols = [];
+    prayerSchedule.forEach((p, i) => cols.push(`${data.prayer[p.key] ? "#4caf50" : "#222"} ${i*72}deg ${(i+1)*72}deg`));
+    div.style.background = `conic-gradient(${cols.join(',')})`;
+    
+    if (data.quran && data.quran.s !== "") div.classList.add("quran-border");
+    if (data.habit) div.classList.add("habit-active");
+    
+    div.onclick = () => openPopup(dStr, d);
+    cal.appendChild(div);
+  }
+  updateStats();
+}
+
+function openPopup(dateStr, dNum) {
+  currentOpenDate = dateStr;
+  const data = getData(dateStr);
+  document.getElementById("popupDate").innerText = `يوم ${dNum}`;
+  
+  const area = document.getElementById("circlesArea");
+  area.innerHTML = "";
+  
+  prayerSchedule.forEach(p => {
+    const b = document.createElement("div");
+    b.className = "popup-circle" + (data.prayer[p.key] ? " active-prayer" : "");
+    b.innerText = p.n;
+    b.onclick = () => { data.prayer[p.key] = !data.prayer[p.key]; saveInternal(dateStr, data); openPopup(dateStr, dNum); };
+    area.appendChild(b);
+  });
+
+  const hB = document.createElement("div");
+  hB.className = "popup-circle" + (data.habit ? " active-habit" : "");
+  hB.innerText = "عادة";
+  hB.onclick = () => { data.habit = !data.habit; saveInternal(dateStr, data); openPopup(dateStr, dNum); };
+  area.appendChild(hB);
+
+  document.getElementById("quranSurah").value = data.quran?.s || "";
+  document.getElementById("quranFrom").value = data.quran?.f || "";
+  document.getElementById("quranTo").value = data.quran?.t || "";
+
+  document.getElementById("popup").style.display = "flex";
+}
+
+function saveInternal(dateStr, data) {
+  localStorage.setItem(dateStr, JSON.stringify(data));
+  updateStats();
+}
+
+function saveAndClose() {
+  const data = getData(currentOpenDate);
+  data.quran = {
+    s: document.getElementById("quranSurah").value,
+    f: document.getElementById("quranFrom").value,
+    t: document.getElementById("quranTo").value
+  };
+  localStorage.setItem(currentOpenDate, JSON.stringify(data));
+  document.getElementById("popup").style.display = "none";
+  loadCalendar();
 }
 
 function updateStats() {
@@ -121,25 +219,6 @@ function updateStats() {
   document.getElementById("habitPercent").innerText = hR+"%";
 }
 
-function loadCalendar() {
-  const cal = document.getElementById("calendar"), days = new Date(year, month + 1, 0).getDate();
-  document.getElementById("monthTitle").innerText = now.toLocaleString("ar", { month: "long", year: "numeric" });
-  cal.innerHTML = "";
-  for (let d = 1; d <= days; d++) {
-    const dStr = `d-${year}-${month+1}-${d}`, data = getData(dStr), div = document.createElement("div");
-    div.className = "day"; div.innerText = d;
-    if (d === todayDate) div.classList.add("today");
-    let cols = [];
-    prayerSchedule.forEach((p, i) => cols.push(`${data.prayer[p.key] ? "#4caf50" : "#222"} ${i*72}deg ${(i+1)*72}deg`));
-    div.style.background = `conic-gradient(${cols.join(',')})`;
-    if (data.habit) { div.style.color = "#e53935"; div.classList.add("habit-glow"); }
-    div.onclick = () => openPopup(dStr, d);
-    cal.appendChild(div);
-  }
-  updateStats();
-}
-
-// وظائف النسخ الاحتياطي
 function exportData() {
   const allData = {};
   for (let i = 0; i < localStorage.length; i++) {
@@ -149,9 +228,8 @@ function exportData() {
   const blob = new Blob([JSON.stringify(allData)], {type: "application/json"});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = `my_prayers_backup.json`;
+  a.href = url; a.download = `backup_${year}_${month+1}.json`;
   a.click();
-  alert("تم تحميل ملف النسخة الاحتياطية. شيله في مكان آمن!");
 }
 
 function importData() {
@@ -163,36 +241,12 @@ function importData() {
     reader.onload = readerEvent => {
       const content = JSON.parse(readerEvent.target.result);
       Object.keys(content).forEach(key => localStorage.setItem(key, content[key]));
-      alert("تم استرجاع البيانات بنجاح!");
       location.reload();
     }
     reader.readAsText(file);
   }
   input.click();
 }
-
-function openPopup(dateStr, dNum) {
-  const data = getData(dateStr);
-  document.getElementById("popupDate").innerText = `يوم ${dNum}`;
-  document.querySelectorAll('.popup-circle').forEach(c => c.remove());
-  prayerSchedule.forEach(p => {
-    const b = document.createElement("div");
-    b.className = "popup-circle" + (data.prayer[p.key] ? " active-prayer" : "");
-    b.innerText = p.n;
-    b.onclick = () => { data.prayer[p.key] = !data.prayer[p.key]; update(dateStr, data, dNum); };
-    document.getElementById("popupContent").insertBefore(b, document.querySelector('.btn-close'));
-  });
-  const hB = document.createElement("div");
-  hB.className = "popup-circle" + (data.habit ? " active-habit" : "");
-  hB.innerText = "عادة";
-  hB.onclick = () => { data.habit = !data.habit; update(dateStr, data, dNum); };
-  document.getElementById("popupContent").insertBefore(hB, document.querySelector('.btn-close'));
-  document.getElementById("popup").style.display = "flex";
-}
-
-function update(s, d, n) { localStorage.setItem(s, JSON.stringify(d)); loadCalendar(); openPopup(s, n); }
-function closePopup() { document.getElementById("popup").style.display = "none"; }
 </script>
 </body>
 </html>
-
